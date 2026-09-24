@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: pham-minh-chien-portfolio
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+      - key: ADMIN_PIN
+        generateValue: true
+      - key: DATA_DIR
+        value: /tmp/chien-portfolio-data

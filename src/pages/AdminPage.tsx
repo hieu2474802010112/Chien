@@ -52,9 +52,13 @@ const QUICK_REPLIES = [
 
 export function AdminPage() {
   // Authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('pmc_admin_auth') === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  useEffect(() => {
+    fetch('/api/auth/session').then(res => setIsAuthenticated(res.ok)).catch(() => setIsAuthenticated(false));
+    const onExpired = () => setIsAuthenticated(false);
+    window.addEventListener('pmc-auth-expired', onExpired);
+    return () => window.removeEventListener('pmc-auth-expired', onExpired);
+  }, []);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
 
@@ -176,7 +180,6 @@ export function AdminPage() {
     const valid = await verifyAdminPin(pinInput);
     if (valid) {
       setIsAuthenticated(true);
-      localStorage.setItem('pmc_admin_auth', 'true');
       setPinInput('');
       loadData();
     } else {
@@ -184,9 +187,12 @@ export function AdminPage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const res = await fetch('/api/auth/logout', { method: 'POST' });
+    if (!res.ok && res.status !== 401) return;
     setIsAuthenticated(false);
-    localStorage.removeItem('pmc_admin_auth');
+    setContacts([]);
+    setSelectedContact(null);
   };
 
   // Send Reply
@@ -375,7 +381,7 @@ export function AdminPage() {
                 type="password"
                 required
                 autoFocus
-                placeholder="Nhập mã PIN (Mã PIN: ChienPR)"
+                placeholder="Nhập mã PIN quản trị"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 className="w-full px-4 py-3.5 rounded-2xl bg-stone-50 border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white shadow-inner"
@@ -397,13 +403,6 @@ export function AdminPage() {
             </button>
 
             <div className="pt-2 flex items-center justify-between text-xs font-mono text-stone-500">
-              <button
-                type="button"
-                onClick={() => setPinInput('ChienPR')}
-                className="text-stone-500 hover:text-rose-600 underline"
-              >
-                Tự điền PIN (ChienPR)
-              </button>
 
               <a
                 href="/"

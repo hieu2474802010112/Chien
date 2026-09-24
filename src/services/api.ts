@@ -1,6 +1,12 @@
 // API Service for Contact Management & Messaging
 const API_BASE = '/api';
 
+async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const response = await window.fetch(input, init);
+  if (response.status === 401) window.dispatchEvent(new Event('pmc-auth-expired'));
+  return response;
+}
+
 export interface Reply {
   id: string;
   sender: 'owner' | 'visitor';
@@ -48,7 +54,7 @@ export async function fetchContacts(params?: {
   if (params?.tag && params.tag !== 'all') query.set('tag', params.tag);
   if (params?.starred) query.set('starred', 'true');
 
-  const res = await fetch(`${API_BASE}/contacts?${query.toString()}`);
+  const res = await apiFetch(`${API_BASE}/contacts?${query.toString()}`);
   if (!res.ok) throw new Error('Không thể tải danh sách liên hệ');
   const json = await res.json();
   return json.data || [];
@@ -56,7 +62,7 @@ export async function fetchContacts(params?: {
 
 // 2. Fetch single contact
 export async function fetchContactById(id: string): Promise<ContactItem> {
-  const res = await fetch(`${API_BASE}/contacts/${id}`);
+  const res = await apiFetch(`${API_BASE}/contacts/${id}`);
   if (!res.ok) throw new Error('Không tìm thấy liên hệ');
   const json = await res.json();
   return json.data;
@@ -64,7 +70,7 @@ export async function fetchContactById(id: string): Promise<ContactItem> {
 
 // 3. Fetch contacts by visitor email
 export async function fetchContactsByEmail(email: string): Promise<ContactItem[]> {
-  const res = await fetch(`${API_BASE}/contacts/by-email/${encodeURIComponent(email)}`);
+  const res = await apiFetch(`${API_BASE}/contacts/by-email/${encodeURIComponent(email)}`);
   if (!res.ok) throw new Error('Không tìm thấy liên hệ nào với email này');
   const json = await res.json();
   return json.data || [];
@@ -79,7 +85,7 @@ export async function submitContact(data: {
   topic?: string;
   message: string;
 }): Promise<ContactItem> {
-  const res = await fetch(`${API_BASE}/contacts`, {
+  const res = await apiFetch(`${API_BASE}/contacts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -94,7 +100,7 @@ export async function sendReply(
   contactId: string,
   data: { sender: 'owner' | 'visitor'; senderName?: string; message: string }
 ): Promise<{ contact: ContactItem; reply: Reply }> {
-  const res = await fetch(`${API_BASE}/contacts/${contactId}/reply`, {
+  const res = await apiFetch(`${API_BASE}/contacts/${contactId}/reply`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -106,7 +112,7 @@ export async function sendReply(
 
 // 6. Update status
 export async function updateContactStatus(contactId: string, status: string): Promise<ContactItem> {
-  const res = await fetch(`${API_BASE}/contacts/${contactId}/status`, {
+  const res = await apiFetch(`${API_BASE}/contacts/${contactId}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
@@ -118,7 +124,7 @@ export async function updateContactStatus(contactId: string, status: string): Pr
 
 // 7. Toggle star
 export async function toggleContactStar(contactId: string): Promise<ContactItem> {
-  const res = await fetch(`${API_BASE}/contacts/${contactId}/star`, {
+  const res = await apiFetch(`${API_BASE}/contacts/${contactId}/star`, {
     method: 'PATCH'
   });
   const json = await res.json();
@@ -128,7 +134,7 @@ export async function toggleContactStar(contactId: string): Promise<ContactItem>
 
 // 8. Update private notes
 export async function updateContactNotes(contactId: string, notes: string): Promise<ContactItem> {
-  const res = await fetch(`${API_BASE}/contacts/${contactId}/notes`, {
+  const res = await apiFetch(`${API_BASE}/contacts/${contactId}/notes`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ notes })
@@ -140,7 +146,7 @@ export async function updateContactNotes(contactId: string, notes: string): Prom
 
 // 9. Delete contact
 export async function deleteContactItem(contactId: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/contacts/${contactId}`, {
+  const res = await apiFetch(`${API_BASE}/contacts/${contactId}`, {
     method: 'DELETE'
   });
   const json = await res.json();
@@ -150,7 +156,7 @@ export async function deleteContactItem(contactId: string): Promise<boolean> {
 
 // 10. Fetch stats
 export async function fetchStats(): Promise<StatsData> {
-  const res = await fetch(`${API_BASE}/stats`);
+  const res = await apiFetch(`${API_BASE}/stats`);
   if (!res.ok) throw new Error('Không thể tải thống kê');
   const json = await res.json();
   return json.data;
@@ -159,7 +165,7 @@ export async function fetchStats(): Promise<StatsData> {
 // 11. Verify PIN
 export async function verifyAdminPin(pin: string): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/auth/verify-pin`, {
+    const res = await apiFetch(`${API_BASE}/auth/verify-pin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin })
@@ -173,7 +179,7 @@ export async function verifyAdminPin(pin: string): Promise<boolean> {
 
 // 12. Clear all contacts
 export async function clearAllContactsApi(): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/contacts/clear`, {
+  const res = await apiFetch(`${API_BASE}/contacts/clear`, {
     method: 'POST'
   });
   const json = await res.json();
@@ -183,7 +189,7 @@ export async function clearAllContactsApi(): Promise<boolean> {
 
 // 13. Reset to sample contacts
 export async function resetSampleContactsApi(): Promise<ContactItem[]> {
-  const res = await fetch(`${API_BASE}/contacts/reset-samples`, {
+  const res = await apiFetch(`${API_BASE}/contacts/reset-samples`, {
     method: 'POST'
   });
   const json = await res.json();
